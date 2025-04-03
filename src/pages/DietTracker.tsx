@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Salad, Plus, Edit, Trash2, Calendar } from 'lucide-react';
+import { X } from '@/components/ui/x';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -79,19 +79,16 @@ const DietTracker = () => {
     }
   ]);
   
-  // Recommended foods based on journal entries and time of day
   const [recommendedFoods] = useState([
     'Lemon Water (morning)',
     'Vitamin C Rich Foods (afternoon)',
     'Omega-3 Foods (evening)'
   ]);
   
-  // Dialog states
   const [addMealDialogOpen, setAddMealDialogOpen] = useState(false);
   const [editMealDialogOpen, setEditMealDialogOpen] = useState(false);
   const [currentMeal, setCurrentMeal] = useState<Meal | null>(null);
   
-  // New meal state
   const [newMeal, setNewMeal] = useState<Omit<Meal, 'id'>>({
     name: '',
     time: '',
@@ -100,10 +97,8 @@ const DietTracker = () => {
     date: new Date().toISOString().split('T')[0]
   });
   
-  // New food item for meal
   const [newFoodItem, setNewFoodItem] = useState('');
   
-  // Function to add a new meal
   const addMeal = () => {
     if (!newMeal.name || !newMeal.time || newMeal.items.length === 0) {
       toast.error('Please fill in all required fields and add at least one food item');
@@ -132,7 +127,6 @@ const DietTracker = () => {
     toast.success('Meal added successfully');
   };
   
-  // Function to add a food item to the new meal
   const addFoodItemToMeal = () => {
     if (!newFoodItem.trim()) return;
     
@@ -151,7 +145,6 @@ const DietTracker = () => {
     setNewFoodItem('');
   };
   
-  // Function to remove a food item from the meal
   const removeFoodItem = (index: number) => {
     if (currentMeal) {
       setCurrentMeal({
@@ -166,13 +159,11 @@ const DietTracker = () => {
     }
   };
   
-  // Function to start editing a meal
   const startEditMeal = (meal: Meal) => {
     setCurrentMeal(meal);
     setEditMealDialogOpen(true);
   };
   
-  // Function to save meal edits
   const saveMealEdits = () => {
     if (!currentMeal || !currentMeal.name || !currentMeal.time || currentMeal.items.length === 0) {
       toast.error('Please fill in all required fields and add at least one food item');
@@ -190,18 +181,15 @@ const DietTracker = () => {
     toast.success('Meal updated successfully');
   };
   
-  // Function to delete a meal
   const deleteMeal = (id: number) => {
     setMeals(meals.filter(meal => meal.id !== id));
     toast.success('Meal deleted');
   };
   
-  // Get today's meals
   const todayMeals = meals.filter(meal => 
     meal.date === new Date().toISOString().split('T')[0]
   );
   
-  // Get yesterday's meals
   const yesterdayMeals = meals.filter(meal => 
     meal.date === new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
@@ -522,7 +510,6 @@ const DietTracker = () => {
         </Card>
       </div>
       
-      {/* Edit Meal Dialog */}
       <Dialog open={editMealDialogOpen} onOpenChange={setEditMealDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -640,7 +627,6 @@ const DietTracker = () => {
   );
 };
 
-// Meal Card Component
 const MealCard = ({ 
   meal, 
   onEdit,
@@ -693,7 +679,6 @@ const MealCard = ({
   );
 };
 
-// Food Category Component
 const FoodCategoryCard = ({ 
   category, 
   foods, 
