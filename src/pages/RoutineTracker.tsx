@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarClock, CheckCircle, Circle, Plus, Edit, Trash2, Save } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { AddRoutineDialog } from '@/components/ui/AddRoutineDialog';
 
 type RoutineItem = {
   id: number;
@@ -20,26 +22,7 @@ type RoutineItem = {
 type RoutineType = 'morning' | 'night' | 'weekly';
 
 const RoutineTracker = () => {
-  // State for each routine type
-  const [morningRoutine, setMorningRoutine] = useState<RoutineItem[]>([
-    { id: 1, name: 'Gentle Cleanser', time: '7:30 AM', completed: true, description: 'Use lukewarm water and gentle circular motions' },
-    { id: 2, name: 'Vitamin C Serum', time: '7:35 AM', completed: true, description: 'Apply 3-4 drops to face and neck' },
-    { id: 3, name: 'Moisturizer', time: '7:40 AM', completed: false, description: 'Apply evenly to face and neck' },
-    { id: 4, name: 'Sunscreen', time: '7:45 AM', completed: false, description: 'SPF 50, reapply every 2 hours if outside' },
-  ]);
-  
-  const [nightRoutine, setNightRoutine] = useState<RoutineItem[]>([
-    { id: 1, name: 'Oil Cleanser', time: '9:30 PM', completed: false, description: 'Massage for 60 seconds to remove makeup and sunscreen' },
-    { id: 2, name: 'Water Cleanser', time: '9:35 PM', completed: false, description: 'Gentle foaming cleanser' },
-    { id: 3, name: 'Exfoliate', time: '9:40 PM', completed: false, description: 'Use 2-3 times per week, not daily' },
-    { id: 4, name: 'Night Cream', time: '9:45 PM', completed: false, description: 'Apply thicker layer than daytime moisturizer' },
-  ]);
-  
-  const [weeklyRoutine, setWeeklyRoutine] = useState<RoutineItem[]>([
-    { id: 1, name: 'Face Mask', time: 'Sunday, 7:00 PM', completed: false, description: 'Clay mask for oily areas, hydrating mask for dry areas' },
-    { id: 2, name: 'Deep Exfoliation', time: 'Wednesday, 9:30 PM', completed: false, description: 'Chemical exfoliant, avoid physical scrubs' },
-    { id: 3, name: 'Hair Removal', time: 'Saturday, 10:00 AM', completed: false, description: 'Followed by soothing aloe vera gel' },
-  ]);
+  const { state, updateMorningRoutine, updateNightRoutine, updateWeeklyRoutine, toggleRoutineItem } = useAppContext();
   
   const [activeTab, setActiveTab] = useState<RoutineType>('morning');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -54,10 +37,10 @@ const RoutineTracker = () => {
   // Get the active routine based on current tab
   const getActiveRoutine = () => {
     switch (activeTab) {
-      case 'morning': return morningRoutine;
-      case 'night': return nightRoutine;
-      case 'weekly': return weeklyRoutine;
-      default: return morningRoutine;
+      case 'morning': return state.morningRoutine;
+      case 'night': return state.nightRoutine;
+      case 'weekly': return state.weeklyRoutine;
+      default: return state.morningRoutine;
     }
   };
   
@@ -65,23 +48,20 @@ const RoutineTracker = () => {
   const setActiveRoutine = (items: RoutineItem[]) => {
     switch (activeTab) {
       case 'morning':
-        setMorningRoutine(items);
+        updateMorningRoutine(items);
         break;
       case 'night':
-        setNightRoutine(items);
+        updateNightRoutine(items);
         break;
       case 'weekly':
-        setWeeklyRoutine(items);
+        updateWeeklyRoutine(items);
         break;
     }
   };
   
   // Toggle the completed status of a routine item
   const toggleCompleted = (id: number) => {
-    const updatedRoutine = getActiveRoutine().map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    );
-    setActiveRoutine(updatedRoutine);
+    toggleRoutineItem(id, activeTab);
     
     const item = getActiveRoutine().find(item => item.id === id);
     if (item) {
@@ -90,24 +70,52 @@ const RoutineTracker = () => {
   };
   
   // Handle input change for new or edited routine item
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, isNew: boolean = true) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, isNew: boolean = true) => {
+    const value = e.target.name === 'time' 
+      ? formatTimeInput(e.target.value)
+      : e.target.value;
+
     if (isNew) {
       setNewRoutineItem({
         ...newRoutineItem,
-        [e.target.name]: e.target.value
+        [e.target.name]: value
       });
     } else if (currentRoutineItem) {
       setCurrentRoutineItem({
         ...currentRoutineItem,
-        [e.target.name]: e.target.value
+        [e.target.name]: value
       });
     }
+  };
+
+  const formatTimeInput = (value: string): string => {
+    // Remove any non-digit characters
+    const digits = value.replace(/\D/g, '');
+    
+    // Format as HH:MM
+    if (digits.length >= 4) {
+      const hours = parseInt(digits.slice(0, 2));
+      const minutes = parseInt(digits.slice(2, 4));
+      
+      // Validate hours and minutes
+      const validHours = Math.min(Math.max(hours, 0), 23);
+      const validMinutes = Math.min(Math.max(minutes, 0), 59);
+      
+      return `${validHours.toString().padStart(2, '0')}:${validMinutes.toString().padStart(2, '0')}`;
+    }
+    
+    return value;
   };
   
   // Add a new routine item
   const addRoutineItem = () => {
-    if (!newRoutineItem.name || !newRoutineItem.time) {
-      toast.error('Please fill in all required fields');
+    if (!newRoutineItem.name) {
+      toast.error('Please enter a name for the routine step');
+      return;
+    }
+    
+    if (!newRoutineItem.time || !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(newRoutineItem.time)) {
+      toast.error('Please enter a valid time in HH:MM format');
       return;
     }
     
@@ -141,8 +149,13 @@ const RoutineTracker = () => {
   
   // Save edits to a routine item
   const saveEditRoutineItem = () => {
-    if (!currentRoutineItem || !currentRoutineItem.name || !currentRoutineItem.time) {
-      toast.error('Please fill in all required fields');
+    if (!currentRoutineItem || !currentRoutineItem.name) {
+      toast.error('Please enter a name for the routine step');
+      return;
+    }
+    
+    if (!currentRoutineItem.time || !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(currentRoutineItem.time)) {
+      toast.error('Please enter a valid time in HH:MM format');
       return;
     }
     
@@ -190,7 +203,7 @@ const RoutineTracker = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {morningRoutine.map((item) => (
+                {getActiveRoutine().map((item) => (
                   <RoutineItem 
                     key={item.id}
                     item={item}
@@ -207,52 +220,13 @@ const RoutineTracker = () => {
                       Add Step
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Add New Routine Step</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Step Name</Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          placeholder="E.g., Apply Toner"
-                          value={newRoutineItem.name}
-                          onChange={(e) => handleInputChange(e)}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="time">Time</Label>
-                        <Input
-                          id="time"
-                          name="time"
-                          placeholder="E.g., 7:30 AM"
-                          value={newRoutineItem.time}
-                          onChange={(e) => handleInputChange(e)}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="description">Description (Optional)</Label>
-                        <Input
-                          id="description"
-                          name="description"
-                          placeholder="Add details about this step"
-                          value={newRoutineItem.description}
-                          onChange={(e) => handleInputChange(e)}
-                        />
-                      </div>
-                      
-                      <Button 
-                        className="w-full bg-gradient-to-r from-skin-teal to-skin-blue"
-                        onClick={addRoutineItem}
-                      >
-                        Add to Routine
-                      </Button>
-                    </div>
-                  </DialogContent>
+                  <AddRoutineDialog
+                    open={addDialogOpen}
+                    onOpenChange={setAddDialogOpen}
+                    newRoutineItem={newRoutineItem}
+                    handleInputChange={handleInputChange}
+                    addRoutineItem={addRoutineItem}
+                  />
                 </Dialog>
               </div>
             </CardContent>
@@ -269,7 +243,7 @@ const RoutineTracker = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {nightRoutine.map((item) => (
+                {getActiveRoutine().map((item) => (
                   <RoutineItem 
                     key={item.id}
                     item={item}
@@ -286,6 +260,13 @@ const RoutineTracker = () => {
                       Add Step
                     </Button>
                   </DialogTrigger>
+                  <AddRoutineDialog
+                    open={addDialogOpen}
+                    onOpenChange={setAddDialogOpen}
+                    newRoutineItem={newRoutineItem}
+                    handleInputChange={handleInputChange}
+                    addRoutineItem={addRoutineItem}
+                  />
                 </Dialog>
               </div>
             </CardContent>
@@ -302,7 +283,7 @@ const RoutineTracker = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {weeklyRoutine.map((item) => (
+                {getActiveRoutine().map((item) => (
                   <RoutineItem 
                     key={item.id}
                     item={item}
@@ -319,6 +300,13 @@ const RoutineTracker = () => {
                       Add Step
                     </Button>
                   </DialogTrigger>
+                  <AddRoutineDialog
+                    open={addDialogOpen}
+                    onOpenChange={setAddDialogOpen}
+                    newRoutineItem={newRoutineItem}
+                    handleInputChange={handleInputChange}
+                    addRoutineItem={addRoutineItem}
+                  />
                 </Dialog>
               </div>
             </CardContent>

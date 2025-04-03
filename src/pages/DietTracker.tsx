@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Salad, Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { X } from '@/components/ui/x';
@@ -28,29 +29,7 @@ type FoodCategory = {
 };
 
 const DietTracker = () => {
-  const [meals, setMeals] = useState<Meal[]>([
-    { 
-      id: 1, 
-      name: 'Breakfast', 
-      time: '8:30 AM', 
-      items: ['Oatmeal', 'Berries', 'Greek Yogurt'], 
-      date: new Date().toISOString().split('T')[0] 
-    },
-    { 
-      id: 2, 
-      name: 'Lunch', 
-      time: '1:00 PM', 
-      items: ['Salad', 'Grilled Chicken', 'Avocado'],
-      date: new Date().toISOString().split('T')[0]
-    },
-    { 
-      id: 3, 
-      name: 'Dinner', 
-      time: '7:00 PM', 
-      items: ['Salmon', 'Brown Rice', 'Steamed Vegetables'],
-      date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    },
-  ]);
+  const { state, addMeal, updateMeal, deleteMeal } = useAppContext();
   
   const [foodCategories] = useState<FoodCategory[]>([
     {
@@ -99,21 +78,14 @@ const DietTracker = () => {
   
   const [newFoodItem, setNewFoodItem] = useState('');
   
-  const addMeal = () => {
+  const handleAddMeal = () => {
     if (!newMeal.name || !newMeal.time || newMeal.items.length === 0) {
       toast.error('Please fill in all required fields and add at least one food item');
       return;
     }
     
-    const newId = meals.length > 0 ? Math.max(...meals.map(meal => meal.id)) + 1 : 1;
-    
-    setMeals([
-      ...meals,
-      {
-        ...newMeal,
-        id: newId
-      }
-    ]);
+    // Use the addMeal function from context
+    addMeal(newMeal);
     
     setNewMeal({
       name: '',
@@ -170,27 +142,23 @@ const DietTracker = () => {
       return;
     }
     
-    setMeals(
-      meals.map(meal => 
-        meal.id === currentMeal.id ? currentMeal : meal
-      )
-    );
+    updateMeal(currentMeal);
     
     setEditMealDialogOpen(false);
     setCurrentMeal(null);
     toast.success('Meal updated successfully');
   };
   
-  const deleteMeal = (id: number) => {
-    setMeals(meals.filter(meal => meal.id !== id));
+  const handleDeleteMeal = (id: number) => {
+    deleteMeal(id);
     toast.success('Meal deleted');
   };
   
-  const todayMeals = meals.filter(meal => 
+  const todayMeals = state.meals.filter(meal => 
     meal.date === new Date().toISOString().split('T')[0]
   );
   
-  const yesterdayMeals = meals.filter(meal => 
+  const yesterdayMeals = state.meals.filter(meal => 
     meal.date === new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
   
@@ -339,7 +307,7 @@ const DietTracker = () => {
                         
                         <Button 
                           className="w-full bg-gradient-to-r from-skin-teal to-skin-blue"
-                          onClick={addMeal}
+                          onClick={handleAddMeal}
                         >
                           Save Meal
                         </Button>
@@ -390,13 +358,13 @@ const DietTracker = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {meals.length > 0 ? (
-                    meals.map((meal) => (
+                  {state.meals.length > 0 ? (
+                    state.meals.map((meal) => (
                       <MealCard 
                         key={meal.id} 
                         meal={meal} 
                         onEdit={startEditMeal}
-                        onDelete={deleteMeal}
+                        onDelete={handleDeleteMeal}
                         showDate
                       />
                     ))
@@ -627,57 +595,43 @@ const DietTracker = () => {
   );
 };
 
-const MealCard = ({ 
-  meal, 
-  onEdit,
-  onDelete,
-  showDate = false
-}: { 
-  meal: Meal;
-  onEdit: (meal: Meal) => void;
-  onDelete: (id: number) => void;
-  showDate?: boolean;
-}) => {
-  return (
-    <div className="p-3 bg-skin-lime/10 rounded-lg">
-      <div className="flex justify-between items-center mb-1">
-        <span className="font-medium text-skin-darkBlue">{meal.name}</span>
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">{meal.time}</span>
-          {showDate && (
-            <span className="text-xs text-muted-foreground ml-1">
-              ({new Date(meal.date).toLocaleDateString()})
+const MealCard = ({ meal, onEdit, onDelete, showDate = false }: { meal: Meal, onEdit: (meal: Meal) => void, onDelete: (id: number) => void, showDate?: boolean }) => (
+  <div className="flex items-center justify-between p-3 rounded-lg bg-skin-lime/10 mb-2">
+    <div className="flex items-center gap-3">
+      <div className="w-2 h-10 bg-skin-teal rounded-full" />
+      <div>
+        <div className="text-sm font-medium text-skin-darkBlue">{meal.name}</div>
+        <div className="text-xs text-muted-foreground">{meal.time}{showDate && ` · ${new Date(meal.date).toLocaleDateString()}`}</div>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {meal.items.map((item, index) => (
+            <span key={index} className="text-xs px-2 py-0.5 rounded-full bg-skin-lime/20 text-skin-darkBlue">
+              {item}
             </span>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6 ml-1" 
-            onClick={() => onEdit(meal)}
-          >
-            <Edit size={12} className="text-skin-teal/70" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6" 
-            onClick={() => onDelete(meal.id)}
-          >
-            <Trash2 size={12} className="text-skin-blue/70" />
-          </Button>
+          ))}
         </div>
+        {meal.notes && <div className="text-xs text-muted-foreground mt-1">{meal.notes}</div>}
       </div>
-      <div className="text-sm text-muted-foreground">
-        {meal.items.join(", ")}
-      </div>
-      {meal.notes && (
-        <div className="text-xs text-muted-foreground mt-1 italic">
-          Note: {meal.notes}
-        </div>
-      )}
     </div>
-  );
-};
+    <div className="flex items-center gap-2">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-8 w-8" 
+        onClick={() => onEdit(meal)}
+      >
+        <Edit size={16} className="text-skin-teal" />
+      </Button>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-8 w-8" 
+        onClick={() => onDelete(meal.id)}
+      >
+        <Trash2 size={16} className="text-skin-blue" />
+      </Button>
+    </div>
+  </div>
+);
 
 const FoodCategoryCard = ({ 
   category, 

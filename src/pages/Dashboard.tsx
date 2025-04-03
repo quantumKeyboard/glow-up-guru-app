@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { RoutineProgress } from '@/components/dashboard/RoutineProgress';
 import { HydrationTracker } from '@/components/dashboard/HydrationTracker';
 import { QuickActions } from '@/components/dashboard/QuickActions';
@@ -10,30 +10,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '@/contexts/AppContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [hydrationLevel, setHydrationLevel] = useState(3);
+  const { state, updateHydrationLevel, toggleRoutineItem } = useAppContext();
   
-  const morningRoutine = [
-    { id: 1, name: 'Gentle Cleanser', completed: true, time: '7:30 AM' },
-    { id: 2, name: 'Vitamin C Serum', completed: true, time: '7:35 AM' },
-    { id: 3, name: 'Moisturizer', completed: false, time: '7:40 AM' },
-    { id: 4, name: 'Sunscreen', completed: false, time: '7:45 AM' },
-  ];
-  
-  const nightRoutine = [
-    { id: 1, name: 'Oil Cleanser', completed: false, time: '9:30 PM' },
-    { id: 2, name: 'Water Cleanser', completed: false, time: '9:35 PM' },
-    { id: 3, name: 'Exfoliate', completed: false, time: '9:40 PM' },
-    { id: 4, name: 'Night Cream', completed: false, time: '9:45 PM' },
-  ];
-  
-  const reminders = [
-    { id: 1, title: 'Apply Sunscreen', time: 'Today, 12:30 PM', type: 'skincare' as const },
-    { id: 2, title: 'Drink Water', time: 'Today, 2:00 PM', type: 'hydration' as const },
-    { id: 3, title: 'Evening Routine', time: 'Today, 9:00 PM', type: 'skincare' as const },
-  ];
+  // Format reminders for display
+  const todayReminders = state.reminders.slice(0, 3).map(reminder => ({
+    id: reminder.id,
+    title: reminder.title,
+    time: `Today, ${reminder.time}`,
+    type: reminder.type
+  }));
   
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -56,14 +45,14 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <RoutineProgress 
             title="Morning Routine" 
-            steps={morningRoutine} 
-            progress={50} 
+            steps={state.morningRoutine} 
+            progress={Math.round((state.morningRoutine.filter(item => item.completed).length / state.morningRoutine.length) * 100)} 
             time="morning" 
           />
           <RoutineProgress 
             title="Night Routine" 
-            steps={nightRoutine} 
-            progress={0} 
+            steps={state.nightRoutine} 
+            progress={Math.round((state.nightRoutine.filter(item => item.completed).length / state.nightRoutine.length) * 100)} 
             time="night" 
           />
         </div>
@@ -101,13 +90,13 @@ const Dashboard = () => {
         </Card>
         
         <HydrationTracker 
-          current={hydrationLevel} 
+          current={state.hydrationLevel} 
           target={8}
-          onIncrement={() => setHydrationLevel(prev => Math.min(prev + 1, 10))}
-          onDecrement={() => setHydrationLevel(prev => Math.max(prev - 1, 0))}
+          onIncrement={() => updateHydrationLevel(Math.min(state.hydrationLevel + 1, 10))}
+          onDecrement={() => updateHydrationLevel(Math.max(state.hydrationLevel - 1, 0))}
         />
         
-        <UpcomingReminders reminders={reminders} />
+        <UpcomingReminders reminders={todayReminders} />
       </div>
     </div>
   );

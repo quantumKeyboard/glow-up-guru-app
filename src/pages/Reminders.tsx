@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bell, Plus, Calendar, Clock, X, Check } from 'lucide-react';
 import { Circle } from '@/components/ui/circle';
@@ -24,12 +25,7 @@ type Reminder = {
 
 const Reminders = () => {
   const [open, setOpen] = useState(false);
-  const [reminders, setReminders] = useState<Reminder[]>([
-    { id: 1, title: 'Apply Sunscreen', time: '12:30 PM', date: '2025-04-03', type: 'skincare', description: 'SPF 50 on face and exposed areas', completed: false },
-    { id: 2, title: 'Drink Water', time: '2:00 PM', date: '2025-04-03', type: 'hydration', description: '500ml of water', completed: false },
-    { id: 3, title: 'Evening Routine', time: '9:00 PM', date: '2025-04-03', type: 'skincare', description: 'Complete night routine', completed: false },
-    { id: 4, title: 'Eat Omega-3 Rich Foods', time: '1:00 PM', date: '2025-04-04', type: 'diet', description: 'Include fish or flaxseeds in lunch', completed: false },
-  ]);
+  const { state, addReminder, updateReminder, deleteReminder, toggleReminderComplete } = useAppContext();
   
   const [newReminder, setNewReminder] = useState<Omit<Reminder, 'id'>>({
     title: '',
@@ -60,15 +56,7 @@ const Reminders = () => {
       return;
     }
     
-    const newId = reminders.length > 0 ? Math.max(...reminders.map(r => r.id)) + 1 : 1;
-    
-    setReminders([
-      ...reminders,
-      {
-        ...newReminder,
-        id: newId
-      }
-    ]);
+    addReminder(newReminder);
     
     setNewReminder({
       title: '',
@@ -84,22 +72,18 @@ const Reminders = () => {
   };
   
   const handleToggleComplete = (id: number) => {
-    setReminders(reminders.map(reminder => 
-      reminder.id === id 
-        ? { ...reminder, completed: !reminder.completed } 
-        : reminder
-    ));
+    toggleReminderComplete(id);
   };
   
   const handleDeleteReminder = (id: number) => {
-    setReminders(reminders.filter(reminder => reminder.id !== id));
+    deleteReminder(id);
     toast.success('Reminder deleted');
   };
   
   // Filter reminders by date
   const today = new Date().toISOString().split('T')[0]; // "2025-04-03" format
-  const todayReminders = reminders.filter(r => r.date === today);
-  const upcomingReminders = reminders.filter(r => r.date && r.date > today);
+  const todayReminders = state.reminders.filter(r => r.date === today);
+  const upcomingReminders = state.reminders.filter(r => r.date && r.date > today);
   
   const getTypeColor = (type: string) => {
     switch (type) {

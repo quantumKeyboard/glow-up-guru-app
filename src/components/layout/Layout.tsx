@@ -1,11 +1,21 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SideNavigation } from './SideNavigation';
 import { Header } from './Header';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAppContext } from '@/contexts/AppContext';
 
 export const Layout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { state } = useAppContext();
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!state.isAuthenticated) {
+      navigate('/login');
+    }
+  }, [state.isAuthenticated, navigate]);
   
   // Determine title based on current route
   const getTitle = () => {
