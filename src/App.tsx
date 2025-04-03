@@ -10,6 +10,7 @@ import RoutineTracker from "./pages/RoutineTracker";
 import IngredientsGuide from "./pages/IngredientsGuide";
 import DietTracker from "./pages/DietTracker";
 import ProgressTracker from "./pages/ProgressTracker";
+import Reminders from "./pages/Reminders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,9 +28,9 @@ const App = () => (
             <Route path="ingredients" element={<IngredientsGuide />} />
             <Route path="diet" element={<DietTracker />} />
             <Route path="progress" element={<ProgressTracker />} />
+            <Route path="reminders" element={<Reminders />} />
             <Route path="hydration" element={<Navigate to="/diet" replace />} />
             <Route path="analytics" element={<Navigate to="/progress" replace />} />
-            <Route path="reminders" element={<Navigate to="/routine" replace />} />
             <Route path="profile" element={<Navigate to="/" replace />} />
           </Route>
           <Route path="*" element={<NotFound />} />

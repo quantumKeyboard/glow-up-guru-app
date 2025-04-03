@@ -30,9 +30,9 @@ const Dashboard = () => {
   ];
   
   const reminders = [
-    { id: 1, title: 'Apply Sunscreen', time: 'Today, 12:30 PM', type: 'skincare' },
-    { id: 2, title: 'Drink Water', time: 'Today, 2:00 PM', type: 'hydration' },
-    { id: 3, title: 'Evening Routine', time: 'Today, 9:00 PM', type: 'skincare' },
+    { id: 1, title: 'Apply Sunscreen', time: 'Today, 12:30 PM', type: 'skincare' as const },
+    { id: 2, title: 'Drink Water', time: 'Today, 2:00 PM', type: 'hydration' as const },
+    { id: 3, title: 'Evening Routine', time: 'Today, 9:00 PM', type: 'skincare' as const },
   ];
   
   return (
